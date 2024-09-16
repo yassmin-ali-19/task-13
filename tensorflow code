@@ -1,0 +1,55 @@
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras import layers, models
+import gzip
+import pickle
+
+def load_data():
+    with gzip.open(r'C:\Users\Yassmin\Downloads\neural-networks-and-deep-learning-master\neural-networks-and-deep-learning-master\data\mnist.pkl', 'rb') as f:
+        training_data, validation_data, test_data = pickle.load(f, encoding='latin1')
+    return (training_data, validation_data, test_data)
+
+def load_data_wrapper():
+    tr_d, va_d, te_d = load_data()
+    training_inputs = [np.reshape(x, (784,)) for x in tr_d[0]]
+    training_results = [vectorized_result(y) for y in tr_d[1]]
+    training_data = list(zip(training_inputs, training_results))
+    validation_inputs = [np.reshape(x, (784,)) for x in va_d[0]]
+    validation_data = list(zip(validation_inputs, va_d[1]))
+    test_inputs = [np.reshape(x, (784,)) for x in te_d[0]]
+    test_data = list(zip(test_inputs, te_d[1]))
+    return (training_data, validation_data, test_data)
+
+def vectorized_result(j):
+    e = np.zeros(10)
+    e[j] = 1.0
+    return e
+
+def build_model():
+    model = models.Sequential()
+    model.add(layers.Dense(30, activation='sigmoid', input_shape=(784,)))
+    model.add(layers.Dense(10, activation='softmax'))
+    model.compile(optimizer='sgd', loss='categorical_crossentropy', metrics=['accuracy'])
+    return model
+
+if __name__ == "__main__":
+    training_data, validation_data, test_data = load_data_wrapper()
+    
+    # Prepare the data for TensorFlow
+    X_train = np.array([x for x, _ in training_data])
+    y_train = np.array([y for _, y in training_data])
+    X_val = np.array([x for x, _ in validation_data])
+    y_val = np.array([y for _, y in validation_data])
+
+    # Build the model
+    model = build_model()
+
+    # Train the model
+    model.fit(X_train, y_train, epochs=30, batch_size=10, validation_data=(X_val, y_val))
+
+    # Evaluate the model on the test data
+    test_inputs = np.array([x for x, _ in test_data])
+    test_labels = np.array([y for _, y in test_data])
+    test_loss, test_accuracy = model.evaluate(test_inputs, test_labels)
+
+    print(f'Test Loss: {test_loss}, Test Accuracy: {test_accuracy}')
